@@ -69,6 +69,8 @@ services:
 
   user:
     build: ./user
+    extra_hosts:
+    - api.moninotools.ru:api
     environment:
       VIRTUAL_HOST: moninotools.ru
       LETSENCRYPT_HOST: moninotools.ru
