@@ -1,0 +1,9 @@
+[submodule "api"]
+	path = api
+	url = https://github.com/YaroslavTaranich/monino-tools-api.git
+[submodule "user"]
+	path = user
+	url = https://github.com/YaroslavTaranich/monino-tools-user.git
+[submodule "admin"]
+	path = admin
+	url = https://github.com/YaroslavTaranich/monino-tools-admin.git

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  reverse-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs
+    networks:
+      - app-network
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/nginx/certs
+    depends_on:
+      - reverse-proxy
+    networks:
+      - app-network
+
+  db:
+    image: postgres:latest
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      VIRTUAL_HOST: pgadmin.moninotools.ru
+      LETSENCRYPT_HOST: pgadmin.moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+    networks:
+      - app-network
+
+  api:
+    build: ./api
+    environment:
+      VIRTUAL_HOST: api.moninotools.ru
+      LETSENCRYPT_HOST: api.moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    volumes:
+      - static-data:/app/static  # Монтируем volume в папку static
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  admin:
+    build: ./admin
+    environment:
+      VIRTUAL_HOST: admin.moninotools.ru
+      LETSENCRYPT_HOST: admin.moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+    networks:
+      - app-network
+
+  web:
+    build: ./web
+    environment:
+      VIRTUAL_HOST: moninotools.ru
+      LETSENCRYPT_HOST: moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:  # Volume для PostgreSQL
+  static-data:  # Volume для статических файлов API
