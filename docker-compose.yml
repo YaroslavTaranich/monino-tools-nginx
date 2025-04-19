@@ -71,6 +71,13 @@ services:
     build: ./user
     extra_hosts:
     - api.moninotools.ru:api
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://api:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       VIRTUAL_HOST: moninotools.ru
       LETSENCRYPT_HOST: moninotools.ru
