@@ -3,6 +3,9 @@ version: '3.8'
 services:
   reverse-proxy:
     image: jwilder/nginx-proxy
+    container_name: nginx-proxy  # Явно задаем имя контейнера
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"  # Важная метка
     ports:
       - "80:80"
       - "443:443"
@@ -21,6 +24,8 @@ services:
       - ./certs:/etc/nginx/certs
       - ./vhost.d:/etc/nginx/vhost.d  
       - ./html:/usr/share/nginx/html
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy  # Явно указываем имя контейнера
     depends_on:
       - reverse-proxy
     networks:
