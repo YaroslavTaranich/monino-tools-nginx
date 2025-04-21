@@ -42,7 +42,7 @@ services:
     ports:
       - 5432:${POSTGRES_PORT}
     expose:
-      - 5432
+      - ${POSTGRES_PORT}
     networks:
       - app-network
 
