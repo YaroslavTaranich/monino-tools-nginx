@@ -60,7 +60,7 @@ services:
     depends_on:
       - db
     ports:
-      -5000:5000
+      - 5000:5000
     expose:
       - 5000
     networks:
@@ -73,7 +73,7 @@ services:
       LETSENCRYPT_HOST: admin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     ports:
-      -3000:3000
+      - 3000:3000
     expose:
       - 3000
     networks:
@@ -93,7 +93,7 @@ services:
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     ports:
-      -3000:4000
+      - 3000:4000
     expose:
       - 4000
     networks:
