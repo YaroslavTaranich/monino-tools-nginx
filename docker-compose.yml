@@ -3,16 +3,16 @@ version: '3.8'
 services:
   reverse-proxy:
     image: jwilder/nginx-proxy
-    container_name: nginx-proxy  # Явно задаем имя контейнера
+    container_name: nginx-proxy
     labels:
-      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"  # Важная метка
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./certs:/etc/nginx/certs
-      - ./vhost.d:/etc/nginx/vhost.d  
+      - ./vhost.d:/etc/nginx/vhost.d
       - ./html:/usr/share/nginx/html
     networks:
       - app-network
@@ -22,42 +22,28 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/etc/nginx/certs
-      - ./vhost.d:/etc/nginx/vhost.d  
+      - ./vhost.d:/etc/nginx/vhost.d
       - ./html:/usr/share/nginx/html
     environment:
-      NGINX_PROXY_CONTAINER: nginx-proxy  # Явно указываем имя контейнера
+      NGINX_PROXY_CONTAINER: nginx-proxy
     depends_on:
       - reverse-proxy
     networks:
       - app-network
 
   postgres:
-    image: postgres:latest
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-    ports:
-      - ${POSTGRES_PORT}:5432
-    expose:
-      - ${POSTGRES_PORT}
-    networks:
-      - app-network
-
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-      VIRTUAL_HOST: pgadmin.moninotools.ru
-      LETSENCRYPT_HOST: pgadmin.moninotools.ru
-      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-    depends_on:
-      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -67,19 +53,12 @@ services:
       VIRTUAL_HOST: api.moninotools.ru
       LETSENCRYPT_HOST: api.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-    volumes:
-      - static-data:/app/static  # Монтируем volume в папку static
-    depends_on:
-      - postgres
-    ports:
-      - 5000:5000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     expose:
-      - 5000
+      - "5000"  # Только для внутренней сети
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -89,30 +68,30 @@ services:
       VIRTUAL_HOST: admin.moninotools.ru
       LETSENCRYPT_HOST: admin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-    ports:
-      - 3000:3000
     expose:
-      - 3000
+      - "3000"
+    depends_on:
+      - reverse-proxy
+      - letsencrypt
     networks:
       - app-network
 
   user:
     build: ./user
-    depends_on:
-      - api
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://api:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     environment:
       VIRTUAL_HOST: moninotools.ru
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-    ports:
-      - 4000:3000
-    expose:
-      - 4000
+      NEXT_PUBLIC_API_URL: https://api.moninotools.ru
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - api
+      - reverse-proxy
+      - letsencrypt
     networks:
       - app-network
 
@@ -121,5 +100,5 @@ networks:
     driver: bridge
 
 volumes:
-  pgdata:  # Volume для PostgreSQL
-  static-data:  # Volume для статических файлов API
+  pgdata:
+  static-data:
