@@ -45,6 +45,8 @@ services:
       VIRTUAL_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      expose:
+       - 5432
     networks:
       - app-network
 
