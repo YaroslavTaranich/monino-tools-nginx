@@ -31,6 +31,7 @@ services:
 
   postgres:
     image: postgres:15
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -63,8 +64,6 @@ services:
       LETSENCRYPT_HOST: api.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    expose:
-      - "5000"  # Только для внутренней сети
     volumes:
       - static-data:/app/static
     depends_on:
@@ -79,8 +78,6 @@ services:
       VIRTUAL_HOST: admin.moninotools.ru
       LETSENCRYPT_HOST: admin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-    expose:
-      - "3000"
     depends_on:
       - reverse-proxy
       - letsencrypt
