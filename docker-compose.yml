@@ -78,6 +78,8 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    ports:
+      - 5000:5000
 
   admin:
     build: ./admin
@@ -109,6 +111,8 @@ services:
       - letsencrypt
     networks:
       - app-network
+    ports:
+      -3000:3000
 
 networks:
   app-network:
