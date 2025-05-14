@@ -45,6 +45,17 @@ services:
     networks:
       - app-network
 
+    pgadmin:
+      image: dpage/pgadmin4
+      environment:
+        PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+        PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+        VIRTUAL_HOST: pgadmin.moninotools.ru
+        LETSENCRYPT_HOST: pgadmin.moninotools.ru
+        LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      networks:
+        - app-network
+  
   api:
     build: ./api
     environment:
@@ -54,6 +65,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     expose:
       - "5000"  # Только для внутренней сети
+    volumes:
+      - static_data:/app/static
     depends_on:
       postgres:
         condition: service_healthy
