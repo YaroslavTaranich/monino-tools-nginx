@@ -79,7 +79,7 @@ services:
     networks:
       - app-network
     ports:
-      - 5000:5000
+      - "5000:5000"
 
   admin:
     build: ./admin
@@ -112,7 +112,7 @@ services:
     networks:
       - app-network
     ports:
-      -3000:3000
+      - "3000:3000"
 
 networks:
   app-network:
