@@ -75,6 +75,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PORT: "5432"
       JWT_SECRET: ${JWT_SECRET}
+      PORT: "3000"
     volumes:
       - static-data:/app/static
     depends_on:
