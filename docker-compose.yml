@@ -2,32 +2,33 @@ services:
   reverse-proxy:
     image: jwilder/nginx-proxy
     container_name: nginx-proxy
-    # labels:
-    #   - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
     ports:
       - "80:80"
-      # - "443:443"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      # - ./certs:/etc/nginx/certs
-      # - ./vhost.d:/etc/nginx/vhost.d
-      # - ./html:/usr/share/nginx/html
+      - ./certs:/etc/nginx/certs
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
     networks:
       - app-network
 
-  # letsencrypt:
-  #   image: jrcs/letsencrypt-nginx-proxy-companion
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - ./certs:/etc/nginx/certs
-  #     - ./vhost.d:/etc/nginx/vhost.d
-  #     - ./html:/usr/share/nginx/html
-  #   environment:
-  #     NGINX_PROXY_CONTAINER: nginx-proxy
-  #   depends_on:
-  #     - reverse-proxy
-  #   networks:
-  #     - app-network
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    depends_on:
+      - reverse-proxy
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/nginx/certs
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+    networks:
+      - app-network
 
   postgres:
     image: postgres:15
@@ -60,14 +61,14 @@ services:
       - postgres
     networks:
       - app-network
-  
+
   api:
     build: ./api
     environment:
       VIRTUAL_HOST: api.moninotools.ru
       VIRTUAL_PORT: 3000
-      # LETSENCRYPT_HOST: api.moninotools.ru
-      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      LETSENCRYPT_HOST: api.moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_HOST: "postgres"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -86,11 +87,11 @@ services:
     build: ./admin
     environment:
       VIRTUAL_HOST: admin.moninotools.ru
-      # LETSENCRYPT_HOST: admin.moninotools.ru
-      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      LETSENCRYPT_HOST: admin.moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     depends_on:
       - reverse-proxy
-      # - letsencrypt
+      - letsencrypt
     networks:
       - app-network
 
@@ -99,9 +100,9 @@ services:
     environment:
       VIRTUAL_HOST: moninotools.ru
       VIRTUAL_PORT: 3000
-      # LETSENCRYPT_HOST: moninotools.ru
-      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-      NEXT_PUBLIC_API_URL: http://api.moninotools.ru
+      LETSENCRYPT_HOST: moninotools.ru
+      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      NEXT_PUBLIC_API_URL: https://api.moninotools.ru
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -110,7 +111,7 @@ services:
     depends_on:
       - api
       - reverse-proxy
-      # - letsencrypt
+      - letsencrypt
     networks:
       - app-network
 
