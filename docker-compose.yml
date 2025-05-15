@@ -15,19 +15,19 @@ services:
     networks:
       - app-network
 
-  letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./certs:/etc/nginx/certs
-      - ./vhost.d:/etc/nginx/vhost.d
-      - ./html:/usr/share/nginx/html
-    environment:
-      NGINX_PROXY_CONTAINER: nginx-proxy
-    depends_on:
-      - reverse-proxy
-    networks:
-      - app-network
+  # letsencrypt:
+  #   image: jrcs/letsencrypt-nginx-proxy-companion
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - ./certs:/etc/nginx/certs
+  #     - ./vhost.d:/etc/nginx/vhost.d
+  #     - ./html:/usr/share/nginx/html
+  #   environment:
+  #     NGINX_PROXY_CONTAINER: nginx-proxy
+  #   depends_on:
+  #     - reverse-proxy
+  #   networks:
+  #     - app-network
 
   postgres:
     image: postgres:15
@@ -56,6 +56,8 @@ services:
       VIRTUAL_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+    depends_on:
+      - postgres
     networks:
       - app-network
   
@@ -99,7 +101,7 @@ services:
       VIRTUAL_HOST: moninotools.ru
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-      NEXT_PUBLIC_API_URL: https://api.moninotools.ru
+      NEXT_PUBLIC_API_URL: http://api.moninotools.ru
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
