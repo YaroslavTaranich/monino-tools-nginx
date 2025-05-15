@@ -22,6 +22,8 @@ services:
       - reverse-proxy
     environment:
       NGINX_PROXY_CONTAINER: nginx-proxy
+      ACME_CA_URI: "https://acme-v02.api.letsencrypt.org/directory"  # временно, пока забанен перевыпуск
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/etc/nginx/certs
@@ -54,8 +56,6 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-      # PGADMIN_CONFIG_SESSION_COOKIE_DOMAIN: "*.moninotools.ru"
-      # PGADMIN_CONFIG_CSRF_COOKIE_DOMAIN: "*.moninotools.ru"
       VIRTUAL_HOST: pgadmin.moninotools.ru
       VIRTUAL_PORT: 5050
       VIRTUAL_PROTO: https
