@@ -6,7 +6,7 @@ services:
     #   - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
     ports:
       - "80:80"
-      - "443:443"
+      # - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       # - ./certs:/etc/nginx/certs
@@ -66,8 +66,8 @@ services:
     environment:
       VIRTUAL_HOST: api.moninotools.ru
       VIRTUAL_PORT: 3000
-      LETSENCRYPT_HOST: api.moninotools.ru
-      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      # LETSENCRYPT_HOST: api.moninotools.ru
+      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_HOST: "postgres"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -86,8 +86,8 @@ services:
     build: ./admin
     environment:
       VIRTUAL_HOST: admin.moninotools.ru
-      LETSENCRYPT_HOST: admin.moninotools.ru
-      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      # LETSENCRYPT_HOST: admin.moninotools.ru
+      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     depends_on:
       - reverse-proxy
       # - letsencrypt
