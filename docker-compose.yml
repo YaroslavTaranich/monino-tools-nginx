@@ -65,6 +65,7 @@ services:
     build: ./api
     environment:
       VIRTUAL_HOST: api.moninotools.ru
+      VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: api.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -80,8 +81,6 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    ports:
-      - "5000:5000"
 
   admin:
     build: ./admin
@@ -99,6 +98,7 @@ services:
     build: ./user
     environment:
       VIRTUAL_HOST: moninotools.ru
+      VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       NEXT_PUBLIC_API_URL: http://api.moninotools.ru
@@ -113,8 +113,6 @@ services:
       # - letsencrypt
     networks:
       - app-network
-    ports:
-      - "3000:3000"
 
 networks:
   app-network:
