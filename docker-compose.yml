@@ -22,8 +22,6 @@ services:
       - reverse-proxy
     environment:
       NGINX_PROXY_CONTAINER: nginx-proxy
-      ACME_CA_URI: "https://acme-v02.api.letsencrypt.org/directory"  # временно, пока забанен перевыпуск
-
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/etc/nginx/certs
