@@ -57,7 +57,7 @@ services:
       PGADMIN_CONFIG_SESSION_COOKIE_DOMAIN: .moninotools.ru
       PGADMIN_CONFIG_CSFR_COOKIE_DOMAIN: .moninotools.ru
       VIRTUAL_HOST: pgadmin.moninotools.ru
-      VIRTUAL_PORT: 80
+      VIRTUAL_PORT: 5050
       VIRTUAL_PROTO: https
       LETSENCRYPT_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
