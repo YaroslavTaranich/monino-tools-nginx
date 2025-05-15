@@ -99,8 +99,8 @@ services:
     environment:
       VIRTUAL_HOST: moninotools.ru
       VIRTUAL_PORT: 3000
-      LETSENCRYPT_HOST: moninotools.ru
-      LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      # LETSENCRYPT_HOST: moninotools.ru
+      # LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       NEXT_PUBLIC_API_URL: http://api.moninotools.ru
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
