@@ -27,6 +27,7 @@ services:
       - ./certs:/etc/nginx/certs
       - ./vhost.d:/etc/nginx/vhost.d
       - ./html:/usr/share/nginx/html
+      - ./acme.sh:/etc/acme.sh
     networks:
       - app-network
 
