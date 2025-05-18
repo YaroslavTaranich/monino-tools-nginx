@@ -107,6 +107,7 @@ services:
       VIRTUAL_HOST: admin.moninotools.ru
       LETSENCRYPT_HOST: admin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
+      REACT_APP_API_URL: api.moninotools.ru
     depends_on:
       - reverse-proxy
       - letsencrypt
