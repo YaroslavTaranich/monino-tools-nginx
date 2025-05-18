@@ -65,7 +65,6 @@ services:
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       PGADMIN_LISTEN_PORT: 80
       PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
-      PGADMIN_CONFIG_LOGIN_BANNER: "Welcome to pgAdmin4"
     ports:
     - "5050:80" 
     depends_on:
