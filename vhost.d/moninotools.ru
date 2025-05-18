@@ -23,25 +23,18 @@ location /static {
     access_log off;
 }
 
-# Обработка изображений через Next.js Image Optimization
-location /_next/image {
-    proxy_pass http://user:3000/_next/image;
+# Оптимизация изображений
+location ~ ^/_next/image {
+    proxy_pass http://user:3000$request_uri;
     proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
 }
 
 # Проксирование API запросов
-location /file/ {
-    proxy_pass http://api:3000/file/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+location ~ ^/file/ {
+    proxy_pass http://api:3000$request_uri;
 }
 
-# Основное проксирование
+# Главный location должен быть ОДИН!
 location / {
     proxy_pass http://user:3000;
 }
