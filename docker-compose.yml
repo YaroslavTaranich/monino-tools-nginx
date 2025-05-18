@@ -124,7 +124,7 @@ services:
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
-      NEXT_PUBLIC_API_URL: https://api.moninotools.ru
+      NEXT_PUBLIC_API_URL: https://api.moninotools.ru/
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
