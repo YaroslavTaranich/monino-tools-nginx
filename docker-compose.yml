@@ -59,6 +59,7 @@ services:
       VIRTUAL_HOST: pgadmin.moninotools.ru
       VIRTUAL_PORT: 80
       VIRTUAL_PROTO: https
+      HTTPS_REDIRECT: false
       LETSENCRYPT_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     depends_on:
@@ -72,6 +73,7 @@ services:
       VIRTUAL_HOST: api.moninotools.ru
       VIRTUAL_PORT: 3000
       VIRTUAL_PROTO: https
+      HTTPS_REDIRECT: false
       LETSENCRYPT_HOST: api.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -93,6 +95,7 @@ services:
     build: ./admin
     environment:
       VIRTUAL_PROTO: https
+      HTTPS_REDIRECT: false
       VIRTUAL_PORT: 80
       VIRTUAL_HOST: admin.moninotools.ru
       LETSENCRYPT_HOST: admin.moninotools.ru
@@ -107,6 +110,7 @@ services:
     build: ./user
     environment:
       VIRTUAL_PROTO: https
+      HTTPS_REDIRECT: false
       VIRTUAL_HOST: moninotools.ru
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: moninotools.ru
