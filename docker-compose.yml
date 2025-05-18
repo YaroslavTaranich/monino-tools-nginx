@@ -58,7 +58,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       VIRTUAL_HOST: pgadmin.moninotools.ru
       VIRTUAL_PORT: 5050
-      VIRTUAL_PROTO: https
       LETSENCRYPT_HOST: pgadmin.moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
     depends_on:
