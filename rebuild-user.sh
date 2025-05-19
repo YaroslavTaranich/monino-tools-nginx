@@ -1,2 +1,2 @@
 #!/bin/bash
-docker compose -d --build user  
+docker compose up -d --build user  
