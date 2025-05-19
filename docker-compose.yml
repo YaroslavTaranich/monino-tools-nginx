@@ -146,9 +146,12 @@ services:
       - pgdata:/pgdata:ro
       - static-data:/static-data:ro
       - ./backups:/backups
-    entrypoint: sh create-backup.sh
+      - ./create-backup.sh:/create-backup.sh
+    command: /create-backup.sh
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - app-network
 
