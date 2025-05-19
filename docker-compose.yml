@@ -146,8 +146,7 @@ services:
       - pgdata:/pgdata:ro
       - static-data:/static-data:ro
       - ./backups:/backups
-    command: >
-      /bin/sh -c "
+    entrypoint: sh -c "
       apk add --no-cache postgresql-client tar find &&
       BACKUP_DIR=/backups/$$(date +%Y-%m-%d) &&
       mkdir -p $$BACKUP_DIR &&
