@@ -131,7 +131,11 @@ services:
       TELEGRAM_BOT: ${TELEGRAM_BOT}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
