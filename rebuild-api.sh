@@ -1,2 +1,4 @@
 #!/bin/bash
-docker compose up -d --build api  
+set -euo pipefail
+
+docker compose up -d --build --no-deps api

@@ -1,2 +1,4 @@
 #!/bin/bash
-docker compose up -d --build user  
+set -euo pipefail
+
+docker compose up -d --build --no-deps user

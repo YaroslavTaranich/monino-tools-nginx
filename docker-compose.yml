@@ -115,7 +115,10 @@ services:
       - app-network
 
   user:
-    build: ./user
+    build:
+      context: ./user
+      args:
+        NEXT_PUBLIC_API_URL: https://api.moninotools.ru/
     environment:
       VIRTUAL_PROTO: http
       HTTPS_REDIRECT: false
@@ -125,6 +128,8 @@ services:
       LETSENCRYPT_HOST: moninotools.ru
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       NEXT_PUBLIC_API_URL: https://api.moninotools.ru/
+      TELEGRAM_BOT: ${TELEGRAM_BOT}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
