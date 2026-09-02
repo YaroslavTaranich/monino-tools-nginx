@@ -1,5 +1,6 @@
 #!/bin/bash
-git pull
+set -euo pipefail
+
+git pull --ff-only
 git submodule sync --recursive
-git submodule update --init --recursive --remote
-git submodule foreach --recursive git pull origin master
+git submodule update --init --recursive

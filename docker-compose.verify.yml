@@ -1,0 +1,18 @@
+services:
+  postgres:
+    container_name: !reset null
+
+  api:
+    environment:
+      VIRTUAL_HOST: ""
+      LETSENCRYPT_HOST: ""
+
+  admin:
+    environment:
+      VIRTUAL_HOST: ""
+      LETSENCRYPT_HOST: ""
+
+  user:
+    environment:
+      VIRTUAL_HOST: ""
+      LETSENCRYPT_HOST: ""

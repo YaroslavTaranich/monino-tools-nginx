@@ -1,0 +1,7 @@
+.env
+backups/
+/acme.sh/
+/certs/
+/certs_backup/
+/html/
+/backup.sql

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Validate shell scripts
+        run: bash -n create-backup.sh restore-backup.sh smoke-test.sh deploy.sh rollback.sh
+      - name: Validate Compose configuration
+        env:
+          ADMIN_EMAIL: ci@example.com
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+          PGADMIN_EMAIL: ci@example.com
+          PGADMIN_PASSWORD: ci
+          JWT_SECRET: ci
+          TELEGRAM_BOT: ci
+          TELEGRAM_CHAT_ID: ci
+        run: docker compose config --quiet
+      - name: Build production images
+        env:
+          ADMIN_EMAIL: ci@example.com
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+          PGADMIN_EMAIL: ci@example.com
+          PGADMIN_PASSWORD: ci
+          JWT_SECRET: ci
+          TELEGRAM_BOT: ci
+          TELEGRAM_CHAT_ID: ci
+        run: docker compose build api admin user
