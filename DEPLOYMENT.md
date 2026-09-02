@@ -52,13 +52,16 @@ Production-операции запускаются вручную из workflow 
 - `audit` — read-only отчет о сервере;
 - `verify` — сборка релиза, backup текущих данных и проверка миграции/приложений на
   временных volumes без переключения production;
-- `deploy` — обновление корневого репозитория до `main` и запуск `deploy.sh`.
+- `deploy` — передача собранного из `main` релиза на VPS и запуск `deploy.sh`.
 
 Workflow использует GitHub Environment `production` и не запускается автоматически
 при push. Одновременно может выполняться только одна production-операция.
 
 Submodule всегда обновляются до коммитов, зафиксированных корневым репозиторием.
 Использование `git submodule update --remote` в deployment запрещено.
+GitHub Runner передает готовое дерево релиза на VPS, поэтому production-серверу не
+нужны GitHub credentials. Успешные релизы сохраняются в
+`/root/monino-tools-releases`, а `/root/monino-tools-current` указывает на текущий.
 
 ## Резервные копии
 
