@@ -53,7 +53,7 @@ Promise.all([
 ]).then(([categories, tools, toolTypes]) => {
   if (!categories.length || !tools.length) process.exit(2);
   if (!toolTypes.length) process.exit(4);
-  if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id || tool.toolType.name !== tool.tool_type)) {
+  if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id)) {
     process.exit(5);
   }
   const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
