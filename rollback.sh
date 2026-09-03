@@ -8,5 +8,5 @@ for service in api admin user; do
   fi
 done
 
-APP_VERSION=rollback docker compose up -d --no-build api admin user
+APP_VERSION=rollback docker compose up -d --no-build --no-deps api admin user
 echo "Previous application images restored. Database migrations were left in place by design."

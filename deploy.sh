@@ -22,7 +22,7 @@ rollback_containers() {
     return
   fi
   echo "Deployment failed; restoring previous application images." >&2
-  APP_VERSION=rollback docker compose up -d --no-build api admin user || true
+  APP_VERSION=rollback docker compose up -d --no-build --no-deps api admin user || true
 }
 
 wait_healthy() {
