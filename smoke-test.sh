@@ -53,7 +53,7 @@ Promise.all([
 ]).then(([categories, tools, toolTypes]) => {
   if (!categories.length || !tools.length) process.exit(2);
   if (!toolTypes.length) process.exit(4);
-  if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id)) {
+  if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id || Object.prototype.hasOwnProperty.call(tool, 'tool_type'))) {
     process.exit(5);
   }
   const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
@@ -66,6 +66,42 @@ Promise.all([
 });
 NODE
 )
+
+docker compose exec -T api node - <<'NODE'
+const { Client } = require('pg');
+
+const client = new Client({
+  host: process.env.POSTGRES_HOST,
+  port: Number(process.env.POSTGRES_PORT || 5432),
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB,
+});
+
+async function verifyToolTypeSchema() {
+  await client.connect();
+  const { rows } = await client.query(`
+    SELECT column_name, is_nullable
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'tools'
+      AND column_name IN ('tool_type', 'tool_type_id')
+  `);
+  await client.end();
+
+  const typeIdColumn = rows.find(({ column_name }) => column_name === 'tool_type_id');
+  const legacyColumn = rows.find(({ column_name }) => column_name === 'tool_type');
+  if (!typeIdColumn || typeIdColumn.is_nullable !== 'NO' || legacyColumn) {
+    console.error('Tool type schema is not finalized', rows);
+    process.exit(1);
+  }
+}
+
+verifyToolTypeSchema().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+NODE
 
 check_url "category API" "$API_URL/category/$CATEGORY_ID"
 check_url "tool list API" "$API_URL/tools?categoryId=$CATEGORY_ID"
