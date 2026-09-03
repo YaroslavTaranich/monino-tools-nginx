@@ -15,7 +15,7 @@ docker compose run --rm --no-deps -T api tar -C /app/static -czf - . \
   > "${BACKUP_DIR}/static-data.tar.gz"
 
 docker compose config --no-interpolate > "${BACKUP_DIR}/compose.yml"
-git rev-parse HEAD > "${BACKUP_DIR}/git-revision.txt"
+git -c safe.directory="$PWD" rev-parse HEAD > "${BACKUP_DIR}/git-revision.txt"
 (
   cd "$BACKUP_DIR"
   if command -v sha256sum > /dev/null 2>&1; then
