@@ -46,8 +46,16 @@ Promise.all([
     if (!response.ok) throw new Error(`/tools ${response.status}`);
     return response.json();
   }),
-]).then(([categories, tools]) => {
+  fetch(`${baseUrl}/tool-types`).then((response) => {
+    if (!response.ok) throw new Error(`/tool-types ${response.status}`);
+    return response.json();
+  }),
+]).then(([categories, tools, toolTypes]) => {
   if (!categories.length || !tools.length) process.exit(2);
+  if (!toolTypes.length) process.exit(4);
+  if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id || tool.toolType.name !== tool.tool_type)) {
+    process.exit(5);
+  }
   const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
   if (!tool) process.exit(3);
   const category = categories.find((item) => item.id === tool.categoryId);
@@ -61,6 +69,7 @@ NODE
 
 check_url "category API" "$API_URL/category/$CATEGORY_ID"
 check_url "tool list API" "$API_URL/tools?categoryId=$CATEGORY_ID"
+check_url "tool types API" "$API_URL/tool-types"
 check_url "tool card API" "$API_URL/tools/$TOOL_ID"
 check_url "category page" "$SITE_URL/$CATEGORY_NAME/"
 check_url "tool card page" "$SITE_URL/$CATEGORY_NAME/$TOOL_NAME/"
