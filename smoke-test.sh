@@ -4,9 +4,6 @@ set -euo pipefail
 SITE_URL=${SITE_URL:-https://moninotools.ru}
 API_URL=${API_URL:-https://api.moninotools.ru}
 ADMIN_URL=${ADMIN_URL:-https://admin.moninotools.ru}
-TMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TMP_DIR"' EXIT
-
 check_url() {
   local label=$1
   local url=$2
@@ -18,18 +15,27 @@ check_url "main page" "$SITE_URL/"
 check_url "admin login page" "$ADMIN_URL/"
 check_url "API health" "$API_URL/health"
 
-curl --fail --silent --show-error --max-time 20 "$API_URL/category" > "$TMP_DIR/categories.json"
-curl --fail --silent --show-error --max-time 20 "$API_URL/tools" > "$TMP_DIR/tools.json"
-
-IFS=$'\t' read -r CATEGORY_ID CATEGORY_NAME TOOL_ID TOOL_NAME < <(node - "$TMP_DIR/categories.json" "$TMP_DIR/tools.json" <<'NODE'
-const fs = require('fs');
-const categories = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const tools = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-if (!categories.length || !tools.length) process.exit(2);
-const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
-if (!tool) process.exit(3);
-const category = categories.find((item) => item.id === tool.categoryId);
-console.log([category.id, category.name, tool.id, tool.name].join('\t'));
+IFS=$'\t' read -r CATEGORY_ID CATEGORY_NAME TOOL_ID TOOL_NAME < <(docker compose exec -T api node - "$API_URL" <<'NODE'
+const baseUrl = process.argv[2];
+Promise.all([
+  fetch(`${baseUrl}/category`).then((response) => {
+    if (!response.ok) throw new Error(`/category ${response.status}`);
+    return response.json();
+  }),
+  fetch(`${baseUrl}/tools`).then((response) => {
+    if (!response.ok) throw new Error(`/tools ${response.status}`);
+    return response.json();
+  }),
+]).then(([categories, tools]) => {
+  if (!categories.length || !tools.length) process.exit(2);
+  const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
+  if (!tool) process.exit(3);
+  const category = categories.find((item) => item.id === tool.categoryId);
+  console.log([category.id, category.name, tool.id, tool.name].join('\t'));
+}).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 NODE
 )
 
@@ -40,7 +46,9 @@ check_url "category page" "$SITE_URL/$CATEGORY_NAME/"
 check_url "tool card page" "$SITE_URL/$CATEGORY_NAME/$TOOL_NAME/"
 
 if [[ -n ${SMOKE_ADMIN_NAME:-} && -n ${SMOKE_ADMIN_PASSWORD:-} ]]; then
-  LOGIN_PAYLOAD=$(node -e 'console.log(JSON.stringify({name: process.argv[1], password: process.argv[2]}))' "$SMOKE_ADMIN_NAME" "$SMOKE_ADMIN_PASSWORD")
+  LOGIN_PAYLOAD=$(docker compose exec -T api node -e \
+    'console.log(JSON.stringify({name: process.argv[1], password: process.argv[2]}))' \
+    "$SMOKE_ADMIN_NAME" "$SMOKE_ADMIN_PASSWORD")
   curl --fail --silent --show-error --max-time 20 \
     -H 'Content-Type: application/json' \
     --data "$LOGIN_PAYLOAD" \
