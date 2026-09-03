@@ -4,6 +4,8 @@ set -euo pipefail
 SITE_URL=${SITE_URL:-https://moninotools.ru}
 API_URL=${API_URL:-https://api.moninotools.ru}
 ADMIN_URL=${ADMIN_URL:-https://admin.moninotools.ru}
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
 check_url() {
   local label=$1
   local url=$2
@@ -11,9 +13,27 @@ check_url() {
   echo "OK: ${label} (${url})"
 }
 
+check_status() {
+  local label=$1
+  local expected=$2
+  local method=$3
+  local url=$4
+  local actual
+  actual=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --max-time 20 --request "$method" "$url")
+  if [[ "$actual" != "$expected" ]]; then
+    echo "FAIL: ${label} expected ${expected}, received ${actual}" >&2
+    return 1
+  fi
+  echo "OK: ${label} (${actual})"
+}
+
 check_url "main page" "$SITE_URL/"
 check_url "admin login page" "$ADMIN_URL/"
 check_url "API health" "$API_URL/health"
+check_status "profile requires a session" 401 GET "$API_URL/auth/profile"
+check_status "registration is closed" 404 POST "$API_URL/auth/reg"
+check_status "user management is removed" 404 GET "$API_URL/user"
 
 IFS=$'\t' read -r CATEGORY_ID CATEGORY_NAME TOOL_ID TOOL_NAME < <(docker compose exec -T api node - "$API_URL" <<'NODE'
 const baseUrl = process.argv[2];
@@ -50,10 +70,18 @@ if [[ -n ${SMOKE_ADMIN_NAME:-} && -n ${SMOKE_ADMIN_PASSWORD:-} ]]; then
     'console.log(JSON.stringify({name: process.argv[1], password: process.argv[2]}))' \
     "$SMOKE_ADMIN_NAME" "$SMOKE_ADMIN_PASSWORD")
   curl --fail --silent --show-error --max-time 20 \
+    --cookie-jar "$TMP_DIR/admin.cookies" \
     -H 'Content-Type: application/json' \
     --data "$LOGIN_PAYLOAD" \
-    "$API_URL/auth/admin" > /dev/null
-  echo "OK: admin authentication"
+    "$API_URL/auth/login" > /dev/null
+  curl --fail --silent --show-error --max-time 20 \
+    --cookie "$TMP_DIR/admin.cookies" \
+    "$API_URL/auth/profile" > /dev/null
+  curl --fail --silent --show-error --max-time 20 \
+    --cookie "$TMP_DIR/admin.cookies" \
+    --request POST \
+    "$API_URL/auth/logout" > /dev/null
+  echo "OK: admin login, profile and logout"
 else
   echo "SKIP: admin authentication (set SMOKE_ADMIN_NAME and SMOKE_ADMIN_PASSWORD to enable)"
 fi

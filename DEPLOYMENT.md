@@ -40,6 +40,30 @@ SMOKE_ADMIN_NAME=admin SMOKE_ADMIN_PASSWORD='...' ./deploy.sh
 
 Без них smoke-тест проверит доступность страницы входа, но не отправит пароль.
 
+## Авторизация администратора
+
+Админка использует единственную сессию администратора в cookie `admin_session` со
+свойствами `HttpOnly`, `Secure` и `SameSite=Strict`. JWT недоступен JavaScript-коду и
+не сохраняется в `localStorage`. Закрытые API endpoints на каждом запросе проверяют
+подпись и срок JWT, роль `admin`, существование администратора в БД и версию его
+пароля. После смены пароля прежние сессии перестают действовать.
+
+Доступны только четыре auth endpoint:
+
+- `POST /auth/login`;
+- `GET /auth/profile`;
+- `PUT /auth/password`;
+- `POST /auth/logout`.
+
+Регистрация и `/user` удалены. Миграция `002-single-administrator` удаляет
+неадминистраторские записи только после создания backup. Если перед миграцией в БД
+не ровно один пользователь с ролью `admin`, deployment останавливается до изменения
+данных.
+
+Пять неудачных попыток входа с одного IP блокируют новые попытки на 15 минут. CORS
+разрешен только доменам из `CORS_ORIGINS`; production Compose задает публичный сайт и
+админку.
+
 ## CI/CD
 
 Каждый из трех приложений собирается своим CI workflow при push и pull request.
@@ -56,6 +80,11 @@ Production-операции запускаются вручную из workflow 
 
 Workflow использует GitHub Environment `production` и не запускается автоматически
 при push. Одновременно может выполняться только одна production-операция.
+
+Для проверки реального login/profile/logout добавьте `SMOKE_ADMIN_NAME` и
+`SMOKE_ADMIN_PASSWORD` в secrets GitHub Environment `production` репозитория
+`monino-tools-user`. Workflow передает их только окружению SSH-процесса; в release и
+`.env` они не записываются.
 
 Submodule всегда обновляются до коммитов, зафиксированных корневым репозиторием.
 Использование `git submodule update --remote` в deployment запрещено.
