@@ -125,7 +125,7 @@ services:
       LETSENCRYPT_EMAIL: ${ADMIN_EMAIL}
       REACT_APP_API_URL: https://api.moninotools.ru
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -162,7 +162,7 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://localhost:3000').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+        - "fetch('http://127.0.0.1:3000').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
