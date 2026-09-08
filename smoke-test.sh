@@ -56,6 +56,22 @@ Promise.all([
   if (tools.some((tool) => !tool.tool_type_id || !tool.toolType || tool.toolType.id !== tool.tool_type_id || Object.prototype.hasOwnProperty.call(tool, 'tool_type'))) {
     process.exit(5);
   }
+  const byId = new Map(tools.map(tool => [tool.id, tool]));
+  for (const tool of tools) {
+    if (typeof tool.accessory_only !== 'boolean' || !Array.isArray(tool.related_tool_ids) || !Array.isArray(tool.related_tools)) {
+      throw new Error(`Missing accessory fields on tool ${tool.id}`);
+    }
+    const ids = tool.related_tool_ids;
+    if (new Set(ids).size !== ids.length || ids.includes(tool.id) || JSON.stringify(ids) !== JSON.stringify(tool.related_tools.map(item => item.id))) {
+      throw new Error(`Invalid related tool list on ${tool.id}`);
+    }
+    for (const related of tool.related_tools) {
+      const target = byId.get(related.id);
+      if (!target || target.accessory_only === tool.accessory_only || !target.related_tool_ids.includes(tool.id) || 'related_tools' in related) {
+        throw new Error(`Invalid symmetric relationship ${tool.id} - ${related.id}`);
+      }
+    }
+  }
   const tool = tools.find((item) => categories.some((category) => category.id === item.categoryId));
   if (!tool) process.exit(3);
   const category = categories.find((item) => item.id === tool.categoryId);
@@ -87,7 +103,22 @@ async function verifyToolTypeSchema() {
       AND table_name = 'tools'
       AND column_name IN ('tool_type', 'tool_type_id')
   `);
+  const { rows: accessoryColumns } = await client.query(`
+    SELECT column_name, is_nullable FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tools' AND column_name = 'accessory_only'
+  `);
+  const { rows: accessoryMigration } = await client.query(
+    `SELECT name FROM "SequelizeMeta" WHERE name = '007-tool-accessories'`
+  );
+  const { rows: invalidLinks } = await client.query(`
+    SELECT links.tool_id FROM tool_accessories links
+    JOIN tools a ON a.id = links.tool_id JOIN tools b ON b.id = links.accessory_tool_id
+    WHERE links.tool_id >= links.accessory_tool_id OR a.accessory_only = b.accessory_only
+  `);
   await client.end();
+  if (accessoryColumns.length !== 1 || accessoryColumns[0].is_nullable !== 'NO' || accessoryMigration.length !== 1 || invalidLinks.length) {
+    throw new Error('Accessory schema or relationships are invalid');
+  }
 
   const typeIdColumn = rows.find(({ column_name }) => column_name === 'tool_type_id');
   const legacyColumn = rows.find(({ column_name }) => column_name === 'tool_type');
