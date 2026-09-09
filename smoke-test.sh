@@ -58,8 +58,16 @@ Promise.all([
   }
   const byId = new Map(tools.map(tool => [tool.id, tool]));
   for (const tool of tools) {
-    if (typeof tool.accessory_only !== 'boolean' || !Array.isArray(tool.related_tool_ids) || !Array.isArray(tool.related_tools)) {
+    if (typeof tool.accessory_only !== 'boolean' || !Array.isArray(tool.related_tool_ids) || !Array.isArray(tool.related_tools) || !Array.isArray(tool.images)) {
       throw new Error(`Missing accessory fields on tool ${tool.id}`);
+    }
+    if (tool.images.length > 5) throw new Error(`Too many images on tool ${tool.id}`);
+    const covers = tool.images.filter((image) => image.is_cover);
+    if (tool.images.length && (covers.length !== 1 || covers[0].storage_key !== tool.image)) {
+      throw new Error(`Invalid image cover on tool ${tool.id}`);
+    }
+    if (tool.images.some((image, index) => index && image.sort_order < tool.images[index - 1].sort_order)) {
+      throw new Error(`Invalid image order on tool ${tool.id}`);
     }
     const ids = tool.related_tool_ids;
     if (new Set(ids).size !== ids.length || ids.includes(tool.id) || JSON.stringify(ids) !== JSON.stringify(tool.related_tools.map(item => item.id))) {
@@ -110,6 +118,22 @@ async function verifyToolTypeSchema() {
   const { rows: accessoryMigration } = await client.query(
     `SELECT name FROM "SequelizeMeta" WHERE name = '007-tool-accessories'`
   );
+  const { rows: imageMigration } = await client.query(
+    `SELECT name FROM "SequelizeMeta" WHERE name = '008-tool-images'`
+  );
+  const { rows: invalidGalleries } = await client.query(`
+    SELECT images.tool_id
+    FROM tool_images images
+    GROUP BY images.tool_id
+    HAVING COUNT(*) > 5 OR COUNT(*) FILTER (WHERE images.is_cover) <> 1
+  `);
+  const { rows: invalidCovers } = await client.query(`
+    SELECT tools.id
+    FROM tools
+    LEFT JOIN tool_images cover
+      ON cover.tool_id = tools.id AND cover.is_cover = TRUE
+    WHERE tools.image IS DISTINCT FROM cover.storage_key
+  `);
   const { rows: invalidLinks } = await client.query(`
     SELECT links.tool_id FROM tool_accessories links
     JOIN tools a ON a.id = links.tool_id JOIN tools b ON b.id = links.accessory_tool_id
@@ -118,6 +142,9 @@ async function verifyToolTypeSchema() {
   await client.end();
   if (accessoryColumns.length !== 1 || accessoryColumns[0].is_nullable !== 'NO' || accessoryMigration.length !== 1 || invalidLinks.length) {
     throw new Error('Accessory schema or relationships are invalid');
+  }
+  if (imageMigration.length !== 1 || invalidGalleries.length || invalidCovers.length) {
+    throw new Error('Image schema or galleries are invalid');
   }
 
   const typeIdColumn = rows.find(({ column_name }) => column_name === 'tool_type_id');
