@@ -310,3 +310,19 @@ https://github.com/YaroslavTaranich/monino-tools-user/actions/runs/34479102877
 развёрнул сценарии 10 сентября 2026 года. Копия
 `backups/20260910T125159Z` прошла проверку дампа, архива и контрольных сумм;
 production healthcheck и smoke-тесты также прошли.
+
+### Автоматическая очистка потерянных изображений
+
+API-коммит `0c2a02b` и корневой release-коммит `2dbe518` добавили preview-команду,
+суточный защитный интервал и автоматическую очистку после проверенного backup.
+API CI и корневой CI, включая изолированный preview/delete тест, завершились успешно:
+
+- https://github.com/YaroslavTaranich/monino-tools-api/actions/runs/34524451191
+- https://github.com/YaroslavTaranich/monino-tools-nginx/actions/runs/34524491661
+
+Production workflow
+https://github.com/YaroslavTaranich/monino-tools-user/actions/runs/34527054928
+развёрнул изменение 10 сентября 2026 года. Backup
+`backups/20260910T203616Z` успешно проверен. Очистка просмотрела 19 файлов:
+17 имели ссылки в БД, два старых файла без ссылок были удалены, свежих orphan-файлов
+не было. Production healthcheck и smoke-тесты прошли.
