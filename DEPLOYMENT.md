@@ -276,3 +276,16 @@ https://github.com/YaroslavTaranich/monino-tools-user/actions/runs/34357550572.
 Оба CI и production workflow завершились успешно. Публичная проверка карточки
 мотопомпы подтвердила обложку в верхнем блоке, отдельную секцию с реальной
 дополнительной фотографией и открытие модального окна.
+
+### Проверка восстановления изображений
+
+Коммит `3ce5395` добавил проверку формата каждой создаваемой копии и полный
+изолированный тест восстановления PostgreSQL и volume `static-data`. Локальный тест
+и CI https://github.com/YaroslavTaranich/monino-tools-nginx/actions/runs/34470296063
+завершились успешно.
+
+Production workflow
+https://github.com/YaroslavTaranich/monino-tools-user/actions/runs/34479102877
+развёрнул сценарии 10 сентября 2026 года. Копия
+`backups/20260910T125159Z` прошла проверку дампа, архива и контрольных сумм;
+production healthcheck и smoke-тесты также прошли.
