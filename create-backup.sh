@@ -5,7 +5,14 @@ BACKUP_ROOT=${BACKUP_ROOT:-./backups}
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 BACKUP_DIR="${BACKUP_ROOT}/${TIMESTAMP}"
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$BACKUP_ROOT"
+mkdir "$BACKUP_DIR"
+
+cleanup_failed_backup() {
+  rm -rf "$BACKUP_DIR"
+}
+
+trap cleanup_failed_backup ERR
 
 docker compose exec -T postgres sh -c \
   'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump --format=custom --create --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
@@ -25,4 +32,6 @@ git -c safe.directory="$PWD" rev-parse HEAD > "${BACKUP_DIR}/git-revision.txt"
   fi
 )
 
+./verify-backup.sh "$BACKUP_DIR"
+trap - ERR
 echo "Backup created: ${BACKUP_DIR}"

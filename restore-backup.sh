@@ -13,11 +13,7 @@ if [[ ${RESTORE_CONFIRM:-no} != yes ]]; then
   exit 2
 fi
 
-if command -v sha256sum > /dev/null 2>&1; then
-  (cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
-else
-  (cd "$BACKUP_DIR" && shasum -a 256 -c SHA256SUMS)
-fi
+./verify-backup.sh "$BACKUP_DIR"
 
 docker compose stop api admin user
 docker compose exec -T postgres sh -c \
@@ -25,8 +21,25 @@ docker compose exec -T postgres sh -c \
   < "$BACKUP_DIR/postgres.dump"
 
 docker compose run --rm --no-deps -T api sh -c \
-  'find /app/static -mindepth 1 -delete && tar -C /app/static -xzf -' \
+  'set -eu
+  staging=/app/static/.restore-staging
+  rm -rf "$staging"
+  mkdir "$staging"
+  trap '\''rm -rf "$staging"'\'' EXIT
+  tar -C "$staging" -xzf -
+  for path in /app/static/* /app/static/.[!.]* /app/static/..?*; do
+    [ -e "$path" ] || continue
+    [ "$path" = "$staging" ] || rm -rf "$path"
+  done
+  for path in "$staging"/* "$staging"/.[!.]* "$staging"/..?*; do
+    [ -e "$path" ] || continue
+    mv "$path" /app/static/
+  done
+  rmdir "$staging"
+  trap - EXIT' \
   < "$BACKUP_DIR/static-data.tar.gz"
 
-docker compose up -d api admin user
+if [[ ${RESTORE_START_SERVICES:-yes} == yes ]]; then
+  docker compose up -d api admin user
+fi
 echo "Restore complete: ${BACKUP_DIR}"
