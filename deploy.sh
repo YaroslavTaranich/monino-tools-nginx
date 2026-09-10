@@ -58,6 +58,10 @@ fi
 # Migrations run in a one-off container before the API is replaced.
 docker compose run --rm --no-deps api npm run migration:up
 
+# The backup above includes every file. Only files that have been unreferenced for
+# at least 24 hours are removed, so concurrent uploads remain safe.
+docker compose run --rm --no-deps api npm run images:cleanup -- --delete
+
 docker compose up -d --no-deps api
 wait_healthy api
 

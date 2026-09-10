@@ -17,7 +17,7 @@ jobs:
         with:
           submodules: recursive
       - name: Validate shell scripts
-        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh test-backup-restore.sh smoke-test.sh deploy.sh rollback.sh
+        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh test-backup-restore.sh test-image-cleanup.sh smoke-test.sh deploy.sh rollback.sh
       - name: Validate Compose configuration
         env:
           ADMIN_EMAIL: ci@example.com
@@ -54,3 +54,15 @@ jobs:
           TELEGRAM_BOT: ci
           TELEGRAM_CHAT_ID: ci
         run: ./test-backup-restore.sh
+      - name: Test image cleanup
+        env:
+          ADMIN_EMAIL: ci@example.com
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+          PGADMIN_EMAIL: ci@example.com
+          PGADMIN_PASSWORD: ci
+          JWT_SECRET: ci
+          TELEGRAM_BOT: ci
+          TELEGRAM_CHAT_ID: ci
+        run: ./test-image-cleanup.sh
