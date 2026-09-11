@@ -50,9 +50,10 @@ package_version() {
 
 validate_component() {
   local name=$1 directory=$2 expected_version=$3 expected_commit=$4
-  local actual_version actual_commit
+  local actual_version actual_commit absolute_directory
   actual_version=$(package_version "$directory")
-  actual_commit=$(git -C "$directory" rev-parse HEAD)
+  absolute_directory=$(cd "$directory" && pwd)
+  actual_commit=$(git -c safe.directory="$absolute_directory" -C "$directory" rev-parse HEAD)
   [[ "$actual_version" == "$expected_version" ]] ||
     release_error "$name package version is $actual_version, expected $expected_version"
   [[ "$actual_commit" == "$expected_commit" ]] ||
