@@ -5,3 +5,7 @@ backups/
 /certs_backup/
 /html/
 /backup.sql
+/.previous-release.env
+/.previous-release.env.tmp
+/.previous-release.env
+/.previous-release.env.tmp

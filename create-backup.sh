@@ -4,6 +4,7 @@ set -euo pipefail
 BACKUP_ROOT=${BACKUP_ROOT:-./backups}
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 BACKUP_DIR="${BACKUP_ROOT}/${TIMESTAMP}"
+RELEASE_MANIFEST=${RELEASE_MANIFEST:-./release.env}
 
 mkdir -p "$BACKUP_ROOT"
 mkdir "$BACKUP_DIR"
@@ -23,12 +24,13 @@ docker compose run --rm --no-deps -T api tar -C /app/static -czf - . \
 
 docker compose config --no-interpolate > "${BACKUP_DIR}/compose.yml"
 git -c safe.directory="$PWD" rev-parse HEAD > "${BACKUP_DIR}/git-revision.txt"
+cp "$RELEASE_MANIFEST" "${BACKUP_DIR}/release.env"
 (
   cd "$BACKUP_DIR"
   if command -v sha256sum > /dev/null 2>&1; then
-    sha256sum postgres.dump static-data.tar.gz > SHA256SUMS
+    sha256sum postgres.dump static-data.tar.gz release.env > SHA256SUMS
   else
-    shasum -a 256 postgres.dump static-data.tar.gz > SHA256SUMS
+    shasum -a 256 postgres.dump static-data.tar.gz release.env > SHA256SUMS
   fi
 )
 

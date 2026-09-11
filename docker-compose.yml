@@ -73,9 +73,14 @@ services:
       - app-network
 
   api:
-    image: monino-tools-api:${APP_VERSION:-latest}
-    build: ./api
+    image: monino-tools-api:${API_VERSION:-development}
+    build:
+      context: ./api
+      args:
+        APP_VERSION: ${API_VERSION:-development}
+        VCS_REF: ${API_COMMIT:-unknown}
     environment:
+      APP_VERSION: ${API_VERSION:-development}
       VIRTUAL_HOST: api.moninotools.ru
       VIRTUAL_PORT: 3000
       VIRTUAL_PROTO: http
@@ -93,6 +98,10 @@ services:
       PORT: "3000"
     volumes:
       - static-data:/app/static
+    labels:
+      com.moninotools.release: ${RELEASE_VERSION:-development}
+      com.moninotools.version: ${API_VERSION:-development}
+      com.moninotools.revision: ${API_COMMIT:-unknown}
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,11 +120,13 @@ services:
       - app-network
 
   admin:
-    image: monino-tools-admin:${APP_VERSION:-latest}
+    image: monino-tools-admin:${ADMIN_VERSION:-development}
     build:
       context: ./admin
       args:
         REACT_APP_API_URL: https://api.moninotools.ru
+        APP_VERSION: ${ADMIN_VERSION:-development}
+        VCS_REF: ${ADMIN_COMMIT:-unknown}
     environment:
       VIRTUAL_PROTO: http
       HTTPS_REDIRECT: false
@@ -130,6 +141,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    labels:
+      com.moninotools.release: ${RELEASE_VERSION:-development}
+      com.moninotools.version: ${ADMIN_VERSION:-development}
+      com.moninotools.revision: ${ADMIN_COMMIT:-unknown}
     depends_on:
       api:
         condition: service_healthy
@@ -142,11 +157,13 @@ services:
       - app-network
 
   user:
-    image: monino-tools-user:${APP_VERSION:-latest}
+    image: monino-tools-user:${USER_VERSION:-development}
     build:
       context: ./user
       args:
         NEXT_PUBLIC_API_URL: https://api.moninotools.ru/
+        APP_VERSION: ${USER_VERSION:-development}
+        VCS_REF: ${USER_COMMIT:-unknown}
     environment:
       VIRTUAL_PROTO: http
       HTTPS_REDIRECT: false
@@ -167,6 +184,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      com.moninotools.release: ${RELEASE_VERSION:-development}
+      com.moninotools.version: ${USER_VERSION:-development}
+      com.moninotools.revision: ${USER_COMMIT:-unknown}
     depends_on:
       api:
         condition: service_healthy

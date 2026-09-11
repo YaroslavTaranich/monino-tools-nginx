@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -17,7 +18,9 @@ jobs:
         with:
           submodules: recursive
       - name: Validate shell scripts
-        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh test-backup-restore.sh test-image-cleanup.sh smoke-test.sh deploy.sh rollback.sh
+        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh test-backup-restore.sh test-image-cleanup.sh smoke-test.sh deploy.sh rollback.sh release-lib.sh validate-release.sh
+      - name: Validate release manifest
+        run: ./validate-release.sh
       - name: Validate Compose configuration
         env:
           ADMIN_EMAIL: ci@example.com
@@ -29,7 +32,7 @@ jobs:
           JWT_SECRET: ci
           TELEGRAM_BOT: ci
           TELEGRAM_CHAT_ID: ci
-        run: docker compose config --quiet
+        run: docker compose --env-file release.env config --quiet
       - name: Build production images
         env:
           ADMIN_EMAIL: ci@example.com
@@ -41,7 +44,7 @@ jobs:
           JWT_SECRET: ci
           TELEGRAM_BOT: ci
           TELEGRAM_CHAT_ID: ci
-        run: docker compose build api admin user
+        run: docker compose --env-file release.env build api admin user
       - name: Test backup and restore
         env:
           ADMIN_EMAIL: ci@example.com
