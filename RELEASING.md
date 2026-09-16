@@ -1,5 +1,8 @@
 # Releases
 
+The overall repository and pipeline architecture is documented in
+`ARCHITECTURE.md`.
+
 The API, admin application, and customer application use independent Semantic
 Versioning. The root repository records the exact combination deployed to
 production in `release.env` and gives that combination a CalVer deployment ID.
@@ -17,7 +20,8 @@ production in `release.env` and gives that combination a CalVer deployment ID.
 - A successful production build also creates a full-SHA alias such as
   `monino-tools-user:<40-character-commit>` for exact image identification.
 - Use Conventional Commit prefixes (`feat:`, `fix:`, `refactor:`, `docs:`,
-  `chore:`) so the reason for the next version is visible in Git history.
+  `chore:`, `ci:`, `ops:`) so Release Please can calculate and document the next
+  version.
 
 Each component keeps its own `CHANGELOG.md`. The root `CHANGELOG.md` describes
 deployment and infrastructure changes.
@@ -26,15 +30,18 @@ deployment and infrastructure changes.
 
 For every changed component:
 
-1. Choose the SemVer increment from the rules above.
-2. Run `npm version <version> --no-git-tag-version` in its directory.
-3. Move the relevant changes into a dated section in its `CHANGELOG.md`.
-4. Commit the component and run its tests, formatter, linter, and production
-   build.
-5. Create the component tag `v<version>` on that commit. CI rejects a tag that
-   does not match `package.json`.
+1. Use Conventional Commit messages for all changes.
+2. Push the changes and wait for the component CI to pass.
+3. Review the release PR created or updated by Release Please. It changes
+   `package.json`, `package-lock.json`, `.release-please-manifest.json`, and
+   `CHANGELOG.md`.
+4. Approve the release PR workflow when GitHub requires maintainer approval and
+   wait for all checks to pass.
+5. Merge the release PR. Release Please creates the matching `v<version>` tag
+   and GitHub Release.
 
-Do not create a new version or tag for unchanged components.
+Do not manually edit the version or create a tag for a normal component release.
+Do not release unchanged components.
 
 ## Preparing the deployment manifest
 

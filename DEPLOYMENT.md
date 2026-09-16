@@ -1,5 +1,8 @@
 # Деплой и восстановление Monino Tools
 
+Общая схема репозиториев, версий и release pipeline описана в
+`ARCHITECTURE.md`.
+
 ## Требования
 
 - Docker с Compose v2;
@@ -88,12 +91,15 @@ SMOKE_ADMIN_NAME=admin SMOKE_ADMIN_PASSWORD='...' ./deploy.sh
 production-образов.
 
 Production-операции запускаются вручную из workflow `Production operations` в
-репозитории `monino-tools-user`. Доступны три режима:
+репозитории `monino-tools-user`. Доступны пять режимов:
 
 - `audit` — read-only отчет о сервере;
 - `verify` — сборка релиза, backup текущих данных и проверка миграции/приложений на
   временных volumes без переключения production;
-- `deploy` — передача собранного из `main` релиза на VPS и запуск `deploy.sh`.
+- `deploy` — передача выбранного неизменяемого корневого тега на VPS и запуск
+  `deploy.sh`;
+- `rollback` — возврат предыдущей комбинации Docker-образов и smoke-тест;
+- `cleanup` — удаление временного verify-окружения и Docker build cache.
 
 Workflow использует GitHub Environment `production` и не запускается автоматически
 при push. Одновременно может выполняться только одна production-операция.
