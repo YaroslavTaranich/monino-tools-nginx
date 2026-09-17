@@ -5,6 +5,8 @@ SITE_URL=${SITE_URL:-https://moninotools.ru}
 API_URL=${API_URL:-https://api.moninotools.ru}
 ADMIN_URL=${ADMIN_URL:-https://admin.moninotools.ru}
 TMP_DIR=$(mktemp -d)
+EXPECTED_API_VERSION=${API_VERSION:-2}
+EXPECTED_API_MAJOR=${EXPECTED_API_VERSION%%.*}
 trap 'rm -rf "$TMP_DIR"' EXIT
 check_url() {
   local label=$1
@@ -35,8 +37,9 @@ check_status "profile requires a session" 401 GET "$API_URL/auth/profile"
 check_status "registration is closed" 404 POST "$API_URL/auth/reg"
 check_status "user management is removed" 404 GET "$API_URL/user"
 
-IFS=$'\t' read -r CATEGORY_ID CATEGORY_NAME TOOL_ID TOOL_NAME < <(docker compose exec -T api node - "$API_URL" <<'NODE'
+IFS=$'\t' read -r CATEGORY_ID CATEGORY_NAME TOOL_ID TOOL_NAME < <(docker compose exec -T api node - "$API_URL" "$EXPECTED_API_MAJOR" <<'NODE'
 const baseUrl = process.argv[2];
+const expectedApiMajor = Number(process.argv[3]);
 Promise.all([
   fetch(`${baseUrl}/category`).then((response) => {
     if (!response.ok) throw new Error(`/category ${response.status}`);
@@ -63,7 +66,11 @@ Promise.all([
     }
     if (tool.images.length > 5) throw new Error(`Too many images on tool ${tool.id}`);
     const covers = tool.images.filter((image) => image.is_cover);
-    if (tool.images.length && (covers.length !== 1 || covers[0].storage_key !== tool.image)) {
+    const hasLegacyImage = Object.prototype.hasOwnProperty.call(tool, 'image');
+    if ((expectedApiMajor >= 2 && hasLegacyImage) || (expectedApiMajor < 2 && !hasLegacyImage)) {
+      throw new Error(`Unexpected legacy image contract on tool ${tool.id}`);
+    }
+    if (tool.images.length && (covers.length !== 1 || (hasLegacyImage && covers[0].storage_key !== tool.image))) {
       throw new Error(`Invalid image cover on tool ${tool.id}`);
     }
     if (tool.images.some((image, index) => index && image.sort_order < tool.images[index - 1].sort_order)) {
@@ -75,7 +82,8 @@ Promise.all([
     }
     for (const related of tool.related_tools) {
       const target = byId.get(related.id);
-      if (!target || target.accessory_only === tool.accessory_only || !target.related_tool_ids.includes(tool.id) || 'related_tools' in related) {
+      const hasLegacyRelatedImage = Object.prototype.hasOwnProperty.call(related, 'image');
+      if (!target || target.accessory_only === tool.accessory_only || !target.related_tool_ids.includes(tool.id) || 'related_tools' in related || (expectedApiMajor >= 2 && hasLegacyRelatedImage) || (expectedApiMajor < 2 && !hasLegacyRelatedImage)) {
         throw new Error(`Invalid symmetric relationship ${tool.id} - ${related.id}`);
       }
     }
@@ -91,8 +99,9 @@ Promise.all([
 NODE
 )
 
-docker compose exec -T api node - <<'NODE'
+docker compose exec -T api node - "$EXPECTED_API_MAJOR" <<'NODE'
 const { Client } = require('pg');
+const expectedApiMajor = Number(process.argv[2]);
 
 const client = new Client({
   host: process.env.POSTGRES_HOST,
@@ -121,18 +130,18 @@ async function verifyToolTypeSchema() {
   const { rows: imageMigration } = await client.query(
     `SELECT name FROM "SequelizeMeta" WHERE name = '008-tool-images'`
   );
+  const { rows: legacyImageRemovalMigration } = await client.query(
+    `SELECT name FROM "SequelizeMeta" WHERE name = '009-remove-legacy-tool-image'`
+  );
   const { rows: invalidGalleries } = await client.query(`
     SELECT images.tool_id
     FROM tool_images images
     GROUP BY images.tool_id
     HAVING COUNT(*) > 5 OR COUNT(*) FILTER (WHERE images.is_cover) <> 1
   `);
-  const { rows: invalidCovers } = await client.query(`
-    SELECT tools.id
-    FROM tools
-    LEFT JOIN tool_images cover
-      ON cover.tool_id = tools.id AND cover.is_cover = TRUE
-    WHERE tools.image IS DISTINCT FROM cover.storage_key
+  const { rows: legacyImageColumn } = await client.query(`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tools' AND column_name = 'image'
   `);
   const { rows: invalidLinks } = await client.query(`
     SELECT links.tool_id FROM tool_accessories links
@@ -143,7 +152,12 @@ async function verifyToolTypeSchema() {
   if (accessoryColumns.length !== 1 || accessoryColumns[0].is_nullable !== 'NO' || accessoryMigration.length !== 1 || invalidLinks.length) {
     throw new Error('Accessory schema or relationships are invalid');
   }
-  if (imageMigration.length !== 1 || invalidGalleries.length || invalidCovers.length) {
+  const legacySchemaIsPreV2 = legacyImageRemovalMigration.length === 0 && legacyImageColumn.length === 1;
+  const legacySchemaIsV2 = legacyImageRemovalMigration.length === 1 && legacyImageColumn.length === 0;
+  const invalidLegacySchema = expectedApiMajor >= 2
+    ? !legacySchemaIsV2
+    : !legacySchemaIsPreV2 && !legacySchemaIsV2;
+  if (imageMigration.length !== 1 || invalidLegacySchema || invalidGalleries.length) {
     throw new Error('Image schema or galleries are invalid');
   }
 
@@ -165,6 +179,9 @@ check_url "category API" "$API_URL/category/$CATEGORY_ID"
 check_url "tool list API" "$API_URL/tools?categoryId=$CATEGORY_ID"
 check_url "tool types API" "$API_URL/tool-types"
 check_url "tool card API" "$API_URL/tools/$TOOL_ID"
+if (( EXPECTED_API_MAJOR >= 2 )); then
+  check_status "legacy tool image upload is removed" 404 POST "$API_URL/tools/$TOOL_ID/image"
+fi
 check_url "category page" "$SITE_URL/$CATEGORY_NAME/"
 check_url "tool card page" "$SITE_URL/$CATEGORY_NAME/$TOOL_NAME/"
 
