@@ -6,6 +6,7 @@
 ## Требования
 
 - Docker с Compose v2;
+- `curl`, Python 3 и `tar` для внешних резервных копий;
 - заполненный `.env` на основе `.env.example`;
 - DNS и сертификаты для трех публичных доменов;
 - достаточно места для одновременно работающих образов и резервной копии.
@@ -90,8 +91,8 @@ SMOKE_ADMIN_NAME=admin SMOKE_ADMIN_PASSWORD='...' ./deploy.sh
 Корневой репозиторий дополнительно проверяет shell-скрипты, Compose и сборку всех
 production-образов.
 
-Production-операции запускаются вручную из workflow `Production operations` в
-репозитории `monino-tools-user`. Доступны пять режимов:
+Production-операции запускаются из workflow `Production operations` в репозитории
+`monino-tools-user`. Доступны восемь режимов:
 
 - `audit` — read-only отчет о сервере;
 - `verify` — сборка релиза, backup текущих данных и проверка миграции/приложений на
@@ -99,10 +100,17 @@ Production-операции запускаются вручную из workflow 
 - `deploy` — передача выбранного неизменяемого корневого тега на VPS и запуск
   `deploy.sh`;
 - `rollback` — возврат предыдущей комбинации Docker-образов и smoke-тест;
-- `cleanup` — удаление временного verify-окружения и Docker build cache.
+- `cleanup` — удаление временного verify-окружения и Docker build cache;
+- `backup` — новая локальная копия, проверенная отправка на Яндекс Диск и применение
+  ротации;
+- `backup-rotation-dry-run` — только просмотр плана хранения без удаления;
+- `backup-restore-test` — скачивание последней внешней копии и её восстановление в
+  изолированные Docker volumes.
 
-Workflow использует GitHub Environment `production` и не запускается автоматически
-при push. Одновременно может выполняться только одна production-операция.
+Deploy-операции не запускаются автоматически при push. Резервная копия запускается
+ежедневно в 02:17 UTC, изолированный restore-test — по воскресеньям в 03:17 UTC.
+Workflow использует GitHub Environment `production`; одновременно может выполняться
+только одна production-операция.
 
 Для проверки реального login/profile/logout добавьте `SMOKE_ADMIN_NAME` и
 `SMOKE_ADMIN_PASSWORD` в secrets GitHub Environment `production` репозитория
@@ -158,8 +166,54 @@ docker compose run --rm --no-deps api npm run images:cleanup -- --delete
 с порогом 24 часа. Полный preview/delete цикл отдельно проверяется в CI на временных
 БД и volume командой `./test-image-cleanup.sh`.
 
-Копии из `./backups` необходимо дополнительно отправлять во внешнее хранилище. Копия
-на том же сервере не защищает от отказа диска.
+### Внешние копии на Яндекс Диске
+
+Внешние копии хранятся в `/Monino Tools/backups/` личного Яндекс Диска через
+WebDAV. В архив попадает содержимое уже проверенной локальной копии: дамп PostgreSQL,
+изображения, release manifest, конфигурация Compose без подстановки секретов и Git
+revision. Дополнительное шифрование не используется. Пароль приложения Яндекса,
+`.env` и другие credentials в архив не попадают.
+
+Для ручной отправки задайте учетные данные только в окружении процесса:
+
+```bash
+YANDEX_WEBDAV_USERNAME='login' \
+YANDEX_WEBDAV_PASSWORD='app-password' \
+REMOTE_BACKUP_ROTATION_APPLY=yes \
+./upload-remote-backup.sh ./backups/20260919T120000Z
+```
+
+Сценарий сначала повторно проверяет локальную копию, загружает архив и отдельную
+SHA-256 сумму, затем скачивает оба объекта обратно, проверяет сумму и внутреннюю
+структуру backup. Только после успешной проверки строится план ротации. По умолчанию
+ротация работает как dry-run; удаление включается переменной
+`REMOTE_BACKUP_ROTATION_APPLY=yes`.
+
+Политика хранения оставляет последнюю копию для каждого из последних 7 дней,
+4 недель и 6 месяцев. Все копии моложе 48 часов защищены дополнительно. Удаление
+останавливается, если у архива нет checksum, список слишком короток или план удаляет
+всё содержимое.
+
+Скачать и проверить последнюю копию:
+
+```bash
+YANDEX_WEBDAV_USERNAME='login' \
+YANDEX_WEBDAV_PASSWORD='app-password' \
+./download-remote-backup.sh latest ./backups/remote-restore
+```
+
+Реальный тест восстановления выполняется только в отдельном Compose project и
+временных Docker volumes:
+
+```bash
+YANDEX_WEBDAV_USERNAME='login' \
+YANDEX_WEBDAV_PASSWORD='app-password' \
+./test-remote-backup-restore.sh
+```
+
+Для GitHub Actions в Environment `production` репозитория `monino-tools-user`
+нужны secrets `YANDEX_WEBDAV_USERNAME` и `YANDEX_WEBDAV_PASSWORD`. Workflow запускает
+создание и отправку копии ежедневно, а изолированное восстановление — раз в неделю.
 
 ## Откат приложения
 
