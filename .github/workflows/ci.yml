@@ -18,7 +18,9 @@ jobs:
         with:
           submodules: recursive
       - name: Validate shell scripts
-        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh test-backup-restore.sh test-image-cleanup.sh smoke-test.sh deploy.sh rollback.sh release-lib.sh validate-release.sh
+        run: bash -n create-backup.sh verify-backup.sh restore-backup.sh remote-backup-lib.sh upload-remote-backup.sh download-remote-backup.sh rotate-remote-backups.sh test-remote-backup-retention.sh test-remote-backup-webdav.sh test-remote-backup-restore.sh test-backup-restore.sh test-image-cleanup.sh smoke-test.sh deploy.sh rollback.sh release-lib.sh validate-release.sh
+      - name: Test remote backup retention
+        run: ./test-remote-backup-retention.sh && ./test-remote-backup-webdav.sh
       - name: Validate release manifest
         run: ./validate-release.sh
       - name: Validate Compose configuration
